@@ -106,8 +106,9 @@ class Assembly():
         cart_mass_kg=1.0,
         cart_friction=0.1, cart_viscosity=0.2,
         cart_vel_mps=0.0, cart_pos_m=0.0,
-        encoderLines = 4096):
+        encoderLines = 4096, g_mps2=9.81):
         self.time = 0.0
+        self.g_mps2 = g_mps2
         self.pend      = Pendulum(pend_mass_kg, pend_rod_m,
                                   pend_friction, pend_viscosity,
                                   0.0, pend_omega_rps, pend_theta_rad)
@@ -125,7 +126,7 @@ class Assembly():
         mc = self.cart.mass_kg
         c = self.cart.getState()
         r = self.pend.radius_m
-        g = 9.81
+        g = self.g_mps2
         Sx = sin(p[0])
         Cx = cos(p[0])
         D  = mc +mp*(Sx**2)
@@ -151,6 +152,7 @@ class Assembly():
     def __str__(self):
         s = str(self.pend) +"\n"
         s += str(self.cart) +"\n"
+        s += "Gravity (m/s2): %.4f"%(self.g_mps2)
         s += "\n"
         return s
 
@@ -169,7 +171,7 @@ if __name__ == "__main__":
         cart_mass_kg=1.0,
         cart_friction=0.1, cart_viscosity=0.2,
         cart_vel_mps=0.0, cart_pos_m=0.0,
-        encoderLines = 4096
+        encoderLines = 4096, g_msp=9.81
         ).print()
 
     dt = 0.01

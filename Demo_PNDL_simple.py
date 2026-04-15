@@ -35,7 +35,7 @@ assy = Assembly(
     cart_mass_kg=0.2,
     cart_friction=0.1, cart_viscosity=3.0,
     cart_vel_mps=0.0, cart_pos_m=0.0,
-    encoderLines = 4096
+    encoderLines = 4096, g_mps2=9.81
     ).print()
 
 view = MAP.Map(
