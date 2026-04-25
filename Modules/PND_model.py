@@ -129,16 +129,17 @@ class Assembly():
         g = self.g_mps2
         Sx = sin(p[0])
         Cx = cos(p[0])
+        w2 = p[1]**2
         D  = mc +mp*(Sx**2)
         
         #acc = (f -mp*Sx*(r*(p[1]**2) -g*Cx)) / (mc +mp*(Sx**2))
-        acc = (f -mp*Sx*(r*(p[1]**2) -g*Cx)) / D
+        acc = (f -mp*Sx*(r*w2 -g*Cx)) / D
         vel = c[1] +acc*dt
         pos = c[0] +vel*dt
         self.cart.setState(pos, vel, acc)        
         
         #omega_dot = (Cx*(f -(p[1]**2)*mp*r*Sx) +g*Sx*(mp+mc)) / (r*(mc +mp*(Sx**2)))
-        omega_dot = (Cx*(f -(p[1]**2)*mp*r*Sx) +g*Sx*(mp+mc)) / (r*D)
+        omega_dot = (Cx*(f -w2*mp*r*Sx) +g*Sx*(mp+mc)) / (r*D)
         omega = p[1] +omega_dot*dt
         theta = p[0] +omega*dt
         self.pend.setState(theta, omega, omega_dot)        
@@ -171,7 +172,7 @@ if __name__ == "__main__":
         cart_mass_kg=1.0,
         cart_friction=0.1, cart_viscosity=0.2,
         cart_vel_mps=0.0, cart_pos_m=0.0,
-        encoderLines = 4096, g_msp=9.81
+        encoderLines = 4096, g_mps2=9.81
         ).print()
 
     dt = 0.01
