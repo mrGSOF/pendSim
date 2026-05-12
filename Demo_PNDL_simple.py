@@ -7,7 +7,8 @@
 """
 import os, time
 from math import pi
-from Modules.PND_model import Assembly
+from Modules.PND_model_XY import Assembly
+#from Modules.PND_model import Assembly
 from Modules.Mouse import Mouse
 from GSOF_Cockpit.Generic import Map as MAP
 
@@ -29,9 +30,9 @@ path = './skin'
 background = Text(  screen=screen, pos=pos, size=screen_size, color=BG_color, name='' )
 
 assy = Assembly(
-    pend_mass_kg=0.1, pend_rod_m=0.5,
+    pend_mass_kg=1.0, pend_rod_m=0.5,
     pend_friction=0.02, pend_viscosity=0.01,
-    pend_omega_rps=0.0, pend_theta_rad=-0.01,
+    pend_omega_rps=0.0, pend_theta_rad=-0.1,
     cart_mass_kg=0.2,
     cart_friction=0.1, cart_viscosity=3.0,
     cart_vel_mps=0.0, cart_pos_m=0.0,
@@ -56,7 +57,8 @@ decimation = int(1/(dt*fps))
 radToDeg = 180/pi
 M_TO_PXL = 300*assy.pend.radius_m
 
-cartPos_pxl = M_TO_PXL*assy.cart.pos_m
+cartPosX_pxl = M_TO_PXL*assy.cart.posX_m
+cartPosY_pxl = M_TO_PXL*assy.cart.posY_m
 print("DT: %1.4f seconds"%(dt))
 print("FPS: %d frames per second"%(fps))
 print("DEC: %1.2f calcs per draw"%(decimation))
@@ -69,13 +71,15 @@ while True:
     #T0 = T1
     ct = ctrl.getMouse()
     for i in range(0,decimation):
-        force = 0.5*(ct["posX"] -cartPos_pxl) 
-        assy.step(force, dt)
-        cartPos_pxl = M_TO_PXL*assy.cart.pos_m
+        forceX = 0.5*(ct["posX"] -cartPosX_pxl) 
+        forceY = 0.5*(ct["posY"] -cartPosY_pxl) 
+        assy.step(forceX, forceY, dt)
+        cartPosX_pxl = M_TO_PXL*assy.cart.posX_m
+        cartPosY_pxl = M_TO_PXL*assy.cart.posY_m
 
     view.update(
-        x=cartPos_pxl,
-        y=0.0,
+        x=cartPosX_pxl,
+        y=cartPosY_pxl,
         deg=-radToDeg*assy.pend.theta_rad
         )
     
