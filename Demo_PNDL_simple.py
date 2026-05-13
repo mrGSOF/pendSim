@@ -30,7 +30,7 @@ path = './skin'
 background = Text(  screen=screen, pos=pos, size=screen_size, color=BG_color, name='' )
 
 assy = Assembly(
-    pend_mass_kg=1.0, pend_rod_m=0.5,
+    pend_mass_kg=0.1, pend_rod_m=0.5,
     pend_friction=0.02, pend_viscosity=0.01,
     pend_omega_rps=0.0, pend_theta_rad=-0.1,
     cart_mass_kg=0.2,
@@ -51,9 +51,9 @@ view = MAP.Map(
 ctrl = Mouse(screen_size)
 clock = Clock()
 
-dt = 0.001
-fps = 50
-decimation = int(1/(dt*fps))
+fps = 500
+dt = 1/fps
+decimation = 20
 radToDeg = 180/pi
 M_TO_PXL = 300*assy.pend.radius_m
 
@@ -76,6 +76,7 @@ while True:
         assy.step(forceX, forceY, dt)
         cartPosX_pxl = M_TO_PXL*assy.cart.posX_m
         cartPosY_pxl = M_TO_PXL*assy.cart.posY_m
+        clock.tick(Fs=fps)
 
     view.update(
         x=cartPosX_pxl,
@@ -85,4 +86,3 @@ while True:
     
     view.draw()
     update()
-    clock.tick(Fs=fps)
