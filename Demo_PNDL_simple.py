@@ -17,6 +17,11 @@ from GSOF_Cockpit.Text import Text
 from GSOF_Cockpit import Pygame_Colors as COLOR
 from GSOF_Cockpit.Clock_base import Clock
 
+def wait(t):
+    while t>time.time():
+        pass
+    return
+
 # Initialise screen.
 BG_color = COLOR.DARK
 screen_size=(960,640)
@@ -51,9 +56,10 @@ view = MAP.Map(
 ctrl = Mouse(screen_size)
 clock = Clock()
 
-fps = 500
+fps = 20
 dt = 1/fps
-decimation = 20
+decimation = 50
+_dt = 1/(fps*decimation)
 radToDeg = 180/pi
 M_TO_PXL = 300*assy.pend.radius_m
 
@@ -64,20 +70,17 @@ print("FPS: %d frames per second"%(fps))
 print("DEC: %1.2f calcs per draw"%(decimation))
 
 T0 = time.time()
+t0 = T0
 while True:
     ###Loop to update gauges
-    #T1 = time.time()
-    #print(T1-T0)
-    #T0 = T1
     ct = ctrl.getMouse()
     for i in range(0,decimation):
         forceX = 0.5*(ct["posX"] -cartPosX_pxl) 
         forceY = 0.5*(ct["posY"] -cartPosY_pxl) 
-        assy.step(forceX, forceY, dt)
+        assy.step(forceX, forceY, _dt)
         cartPosX_pxl = M_TO_PXL*assy.cart.posX_m
         cartPosY_pxl = M_TO_PXL*assy.cart.posY_m
-        clock.tick(Fs=fps)
-
+    
     view.update(
         x=cartPosX_pxl,
         y=cartPosY_pxl,
@@ -86,3 +89,6 @@ while True:
     
     view.draw()
     update()
+    T0 += dt
+    wait(T0) #< More accurate than clock.tick(Fs=fps) or clock.tick_busy_loop(Fs=fps)
+    print("%1.4f"%(time.time() -T0))
