@@ -14,7 +14,40 @@ def sign(val) -> int:
     return 1
 
 def _FW_EulerInt(X, X_dot, dt):
+    """ """
     return addV(X, scaleV(X_dot, dt))
+
+def _RK2(fdiff, X, dt):
+    """ """
+    forceX, f1_cartState, f1_pendState = X
+    f1_A1 = fdiff(forceX,
+                  f1_cartState,
+                  f1_pendState
+                 )
+    
+    f1_V0 = (f1_cartState[1], f1_pendState[1])
+    f2_V1 = _FW_EulerInt(f1_V0, f1_A1, 0.5*dt)
+
+    f1_X0 = (f1_cartState[0], f1_pendState[0])
+    f2_X1 = _FW_EulerInt(f1_X0, f2_V1, 0.5*dt)
+
+    accX, omega_dot = f1_A1
+    velX, omega     = f2_V1
+    posX, theta     = f2_X1
+    
+    f2_cartState = [posX, velX, accX]
+    f2_pendState = [theta, omega, omega_dot]
+    f2_A1 = fdiff(forceX,
+                  f2_cartState,
+                  f2_pendState
+                 )
+    V1 = _FW_EulerInt(f1_V0, f2_A1, dt)
+    X1 = _FW_EulerInt(f1_X0, V1, dt)
+    
+    accX, omega_dot = f2_A1
+    velX, omega     = V1
+    posX, theta     = X1
+    return ((posX, velX, accX), (theta, omega, omega_dot))      
 
 class Encoder():
     def __init__(self, counts):
@@ -163,38 +196,10 @@ class Assembly():
         self.pend.setState(theta, omega, omega_dot)        
 
     def RK2(self, forceX, dt):
-        u = forceX
-        f1_cartState = self.cart.getState()
-        f1_pendState = self.pend.getState()
-        f1_A1 = self._diff(u,
-                           f1_cartState,
-                           f1_pendState
-                          )
-        
-        f1_V0 = (f1_cartState[1], f1_pendState[1])
-
-        f2_V1 = _FW_EulerInt(f1_V0, f1_A1, 0.5*dt)
-        f1_X0 = (f1_cartState[0], f1_pendState[0])
-        f2_X1 = _FW_EulerInt(f1_X0, f2_V1, 0.5*dt)
-
-        accX, omega_dot = f1_A1
-        velX, omega     = f2_V1
-        posX, theta     = f2_X1
-        
-        f2_cartState = [posX, velX, accX]
-        f2_pendState = [theta, omega, omega_dot]
-        f2_A1 = self._diff(u,
-                           f2_cartState,
-                           f2_pendState
-                          )
-        V1 = _FW_EulerInt(f1_V0, f2_A1, dt)
-        X1 = _FW_EulerInt(f1_X0, V1, dt)
-        
-        accX, omega_dot = f2_A1
-        velX, omega     = V1
-        posX, theta     = X1
-        self.cart.setState(posX, velX, accX)        
-        self.pend.setState(theta, omega, omega_dot)        
+        X = (forceX, self.cart.getState(), self.pend.getState())
+        cartState, pendState = _RK2(self._diff, X, dt)
+        self.cart.setState(*cartState)        
+        self.pend.setState(*pendState)        
 
     def getPend_rad(self):
         return self.rotor.theta_rad

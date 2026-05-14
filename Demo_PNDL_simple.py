@@ -34,7 +34,7 @@ path = './skin'
 background = Text(  screen=screen, pos=pos, size=screen_size, color=BG_color, name='' )
 
 assy = Assembly(
-    pend_mass_kg=0.1, pend_rod_m=0.5,
+    pend_mass_kg=0.5, pend_rod_m=0.5,
     pend_friction=0.02, pend_viscosity=0.01,
     pend_omega_rps=0.0, pend_theta_rad=-0.01,
     cart_mass_kg=0.2,
@@ -55,32 +55,28 @@ view = MAP.Map(
 ctrl = Mouse(screen_size)
 clock = Clock()
 
-fps = 500
-dt = 1/fps
-decimation = 10
+fps = 20        #< Display updates per second
+decimation = 50 #< Calculations between display update
+dt = 1/fps      #< Display dt
+_dt = 1/(fps*decimation) #< Calculation dt
 radToDeg = 180/pi
 M_TO_PXL = 300*assy.pend.radius_m
 
 cartPos_pxl = M_TO_PXL*assy.cart.pos_m
 print("DT: %1.4f seconds"%(dt))
 print("FPS: %d frames per second"%(fps))
-print("DEC: %1.2f calcs per draw"%(decimation))
+print("DEC: %1.2f calcs per draw (%d ms)"%(decimation, int(_dt*1000)))
 
 T0 = time.time()
+t0 = T0
 while True:
     ###Loop to update gauges
     ct = ctrl.getMouse()
-    T0 = time.time()
-    t0 = T0
     for i in range(0,decimation):
-        forceX = 0.5*(ct["posX"] -cartPos_pxl) 
-        forceY = 0.5*(ct["posX"] -cartPos_pxl) 
-        assy.step(forceX, forceY, dt)
+        forceX = 0.8*(ct["posX"] -cartPos_pxl) 
+        forceY = 0.8*(ct["posX"] -cartPos_pxl) 
+        assy.step(forceX, forceY, _dt)
         cartPos_pxl = M_TO_PXL*assy.cart.pos_m
-        T0 += dt
-        wait(T0) #< More accurate than clock.tick(Fs=fps)
-    T1 = time.time()
-    print("%1.4f"%(T1-t0))
 
     view.update(
         x=cartPos_pxl,
@@ -90,3 +86,6 @@ while True:
     
     view.draw()
     update()
+    T0 += dt
+    wait(T0) #< More accurate than clock.tick(Fs=fps)
+    print("%1.4f"%(time.time()-T0))
