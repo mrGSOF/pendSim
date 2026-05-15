@@ -25,18 +25,18 @@ def _RK2(fdiff, X, dt):
                   f1_pendState
                  )
     
-    f1_V0 = (f1_cartState[1], f1_pendState[1])
+    f1_V0 = (f1_cartState[0], f1_pendState[0])
     f2_V1 = _FW_EulerInt(f1_V0, f1_A1, 0.5*dt)
 
-    f1_X0 = (f1_cartState[0], f1_pendState[0])
+    f1_X0 = (f1_cartState[1], f1_pendState[1])
     f2_X1 = _FW_EulerInt(f1_X0, f2_V1, 0.5*dt)
 
     accX, omega_dot = f1_A1
     velX, omega     = f2_V1
     posX, theta     = f2_X1
     
-    f2_cartState = [posX, velX, accX]
-    f2_pendState = [theta, omega, omega_dot]
+    f2_cartState = [velX, posX]
+    f2_pendState = [omega, theta]
     f2_A1 = fdiff(forceX,
                   f2_cartState,
                   f2_pendState
@@ -44,10 +44,10 @@ def _RK2(fdiff, X, dt):
     V1 = _FW_EulerInt(f1_V0, f2_A1, dt)
     X1 = _FW_EulerInt(f1_X0, V1, dt)
     
-    accX, omega_dot = f2_A1
+    #accX, omega_dot = f2_A1
     velX, omega     = V1
     posX, theta     = X1
-    return ((posX, velX, accX), (theta, omega, omega_dot))      
+    return ((velX, posX), (omega, theta))      
 
 class Encoder():
     def __init__(self, counts):
@@ -64,30 +64,30 @@ class Pendulum():
         self,
         mass_kg, radius_m,
         friction=0.01, viscosity=0.01,
-        omega_dot_rps2=0.0, omega_rps=0.0, theta_rad=0.0):
+        omega_rps=0.0, theta_rad=0.0):
         
         self.mass_kg  = mass_kg
         self.radius_m = radius_m
         self.setState(
-            theta_rad,      #< Angle
+            #omega_dot_rps2, #< Angular acceleration
             omega_rps,      #< Angular velocity
-            omega_dot_rps2  #< Angular acceleration
+            theta_rad       #< Angle
         )
         
-    def setState(self, theta_rad, omega_rps, omega_dot_rps2) -> None:
-        self.omega_dot_rps2 = omega_dot_rps2
+    def setState(self, omega_rps, theta_rad) -> None:
+        #self.omega_dot_rps2 = omega_dot_rps2
         self.omega_rps      = omega_rps
         self.theta_rad      = theta_rad
 
     def getState(self) -> list:
-        return [self.theta_rad,
+        return [#self.omega_dot_rps2,
                 self.omega_rps,
-                self.omega_dot_rps2
+                self.theta_rad
                 ]
 
     def __str__(self) -> str:
         s = "## ROTOR STATE ##\n"
-        s += "omega_dot_rps2: %.4f\n"%self.omega_dot_rps2
+        #s += "omega_dot_rps2: %.4f\n"%self.omega_dot_rps2
         s += "omega_rps     : %.4f\n"%self.omega_rps
         s += "theta-rad     : %.4f\n"%self.theta_rad
         return s
@@ -97,30 +97,30 @@ class Pendulum():
 
 class Cart():
     def __init__(self, mass_kg, friction, viscosity,
-                 acc_mps2=0.0, vel_mps=0.0, pos_m=0.0):
+                 vel_mps=0.0, pos_m=0.0):
         self.mass_kg = mass_kg
         self.friction = friction
         self.viscosity = viscosity
         self.setState(
-            pos_m,    #< Angle
+            #acc_mps2  #< Angular acceleration
             vel_mps,  #< Angular velocity
-            acc_mps2  #< Angular acceleration
+            pos_m,    #< Angle
         )
 
-    def setState(self, pos_m, vel_mps, acc_mps2) -> None:
-        self.acc_mps2 = acc_mps2
+    def setState(self, vel_mps, pos_m) -> None:
+        #self.acc_mps2 = acc_mps2
         self.vel_mps  = vel_mps
         self.pos_m    = pos_m
 
     def getState(self) -> list:
-        return [self.pos_m,
+        return [#self.acc_mps2,
                 self.vel_mps,
-                self.acc_mps2
+                self.pos_m
                 ]
 
     def __str__(self) -> str:
         s = "## CART STATE ##\n"
-        s += "acc_mps2 : %.4f\n"%self.acc_mps2
+        #s += "acc_mps2 : %.4f\n"%self.acc_mps2
         s += "vel_mps  : %.4f\n"%self.vel_mps
         s += "pos_m    : %.4f\n"%self.pos_m
         return s
@@ -143,10 +143,10 @@ class Assembly():
         self.g_mps2 = g_mps2
         self.pend      = Pendulum(pend_mass_kg, pend_rod_m,
                                   pend_friction, pend_viscosity,
-                                  0.0, pend_omega_rps, pend_theta_rad)
+                                  pend_omega_rps, pend_theta_rad)
         
         self.cart      = Cart(cart_mass_kg, cart_friction, cart_viscosity,
-                              0.0, cart_vel_mps, cart_pos_m)
+                              cart_vel_mps, cart_pos_m)
         
         self.encoder   = Encoder(counts=encoderLines)
 
@@ -157,17 +157,17 @@ class Assembly():
         self.RK2(Fx, dt)
 
     def _diff(self, u, cartState, pendState):
-        forceX = u
-        f = forceX - self.cart.viscosity*self.cart.vel_mps
+        Fx = u
+        Vx = cartState[0]
+        f = Fx - self.cart.viscosity*Vx
         mp = self.pend.mass_kg
         p = self.pend.getState()
         mc = self.cart.mass_kg
-        c = self.cart.getState()
         r = self.pend.radius_m
         g = self.g_mps2
-        Sx = sin(p[0])
-        Cx = cos(p[0])
-        w2 = p[1]**2
+        Sx = sin(p[1])
+        Cx = cos(p[1])
+        w2 = p[0]**2
         D  = mc +mp*(Sx**2)
         
         #acc = (f -mp*Sx*(r*(p[1]**2) -g*Cx)) / (mc +mp*(Sx**2))
@@ -182,18 +182,18 @@ class Assembly():
                         cartState,
                         pendState
                        )
-        V0 = (cartState[1], pendState[1])
+        V0 = (cartState[0], pendState[0])
         V1 = _FW_EulerInt(V0, A1, dt)
 
-        X0 = (cartState[0], pendState[0])
+        X0 = (cartState[1], pendState[1])
         X1 = _FW_EulerInt(X0, V1, dt)
 
-        accX, omega_dot = A1
+        #accX, omega_dot = A1
         velX, omega = V1
         posX, theta = X1
         
-        self.cart.setState(posX, velX, accX)        
-        self.pend.setState(theta, omega, omega_dot)        
+        self.cart.setState(velX, posX)        
+        self.pend.setState(omega, theta)        
 
     def RK2(self, forceX, dt):
         X = (forceX, self.cart.getState(), self.pend.getState())
