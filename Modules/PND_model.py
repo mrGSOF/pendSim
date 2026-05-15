@@ -152,7 +152,7 @@ class Assembly():
 
     def step(self, forceX, forceY, dt):
         self.time += dt
-        Fx = forceX -self.cart.viscosity*self.cart.vel_mps
+        Fx = forceX
         #self.FW_Euler(Fx, dt)
         self.RK2(Fx, dt)
 
